@@ -15,6 +15,7 @@ void print_menu(void);
 void breadthSearch(size_t n, int matrix[n][n],
                     int visited[n], size_t start);
 int allComponents(size_t n, int matrix[n][n]);
+TreeCheck bfsTreeCheck(size_t n, int matrix[n][n], size_t start);
 
 int main() {
 
@@ -76,7 +77,16 @@ int main() {
             case 5:
                 running = 0;
                 break;
+            case 6: {
+                TreeCheck res = bfsTreeCheck(n, matrix, 0);
 
+                if (res.visited_all && !res.has_cycle && res.edge_count == n - 1)
+                    printf("Graph is a tree\n");
+                else
+                    printf("Graph is NOT a tree\n");
+
+                break;
+            }
             default:
                 printf("Invalid choice\n");
         }
@@ -94,6 +104,7 @@ void print_menu(void) {
     printf("3: Breadth-First Search\n");
     printf("4: Connected Components\n");
     printf("5: Exit\n");
+    printf("6: Check Tree\n");
     printf("Choice: ");
 }
 
@@ -282,6 +293,6 @@ TreeCheck bfsTreeCheck(size_t n, int matrix[n][n], size_t start){
     }
 
     result.edge_count /= 2;
-    return;
+    return result;
 }
 
