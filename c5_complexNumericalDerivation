@@ -1,0 +1,214 @@
+#include <stdio.h>
+#include <math.h>
+#include <complex.h>
+
+/*
+============================================================
+ Complex Function Derivative Analyzer
+------------------------------------------------------------
+ This program:
+ 1. Reads a complex number z = x + iy from user input
+ 2. Applies a selected complex-valued function f(z)
+ 3. Approximates the derivative using central difference
+ 4. Computes derivatives along real and imaginary directions
+ 5. Compares both results to determine analyticity
+
+ A function is considered analytic if the derivative is
+ independent of direction (numerically approximated).
+============================================================
+*/
+
+/* ========= Function Prototypes ========= */
+
+/* Complex functions */
+double complex FSquare(double complex z);
+double complex FPoly(double complex z);
+double complex FExpo(double complex z);
+double complex FSin(double complex z);
+double complex FFraction(double complex z);
+double complex FLog(double complex z);
+double complex FRoot(double complex z);
+double complex FConj(double complex z);
+double complex FMagSquare(double complex z);
+double complex FRealOnly(double complex z);
+
+/* Numerical derivative */
+double complex derivative(double complex (*f)(double complex),
+                          double complex z,
+                          double complex h);
+
+/* ===================== MAIN ===================== */
+
+int main(void) {
+
+    double x, y;
+    int choice;
+
+    /* Read complex number */
+    printf("Enter complex number (real imag): ");
+    if (scanf("%lf %lf", &x, &y) != 2) {
+        printf("Invalid input\n");
+        return 1;
+    }
+
+    double complex z = x + y * I;
+
+    /* Function selection */
+    printf("\nAvailable functions:\n");
+    printf("1 = z^2\n");
+    printf("2 = z^3\n");
+    printf("3 = exp(z)\n");
+    printf("4 = sin(z)\n");
+    printf("5 = 1/z\n");
+    printf("6 = log(z)\n");
+    printf("7 = sqrt(z)\n");
+    printf("8 = conj(z)\n");
+    printf("9 = |z|^2\n");
+    printf("10 = Re(z)\n");
+
+    printf("\nChoose function: ");
+    if (scanf("%d", &choice) != 1 || choice < 1 || choice > 10) {
+        printf("Invalid choice\n");
+        return 1;
+    }
+
+    /* Function pointer */
+    double complex (*f)(double complex) = NULL;
+
+    switch (choice) {
+        case 1:  f = FSquare;      break;
+        case 2:  f = FPoly;        break;
+        case 3:  f = FExpo;        break;
+        case 4:  f = FSin;         break;
+        case 5:  f = FFraction;    break;
+        case 6:  f = FLog;         break;
+        case 7:  f = FRoot;        break;
+        case 8:  f = FConj;        break;
+        case 9:  f = FMagSquare;   break;
+        case 10: f = FRealOnly;    break;
+    }
+
+    /*
+    Step sizes for numerical differentiation.
+    h_real perturbs along the real axis.
+    h_img perturbs along the imaginary axis.
+    */
+    double complex h_real = 1e-6 + 0.0 * I;
+    double complex h_img  = 0.0 + 1e-6 * I;
+
+    /* Compute derivatives */
+    double complex d_real = derivative(f, z, h_real);
+    double complex d_img  = derivative(f, z, h_img);
+
+    /* Output results */
+    printf("\nz = %.6f %+.6fi\n", creal(z), cimag(z));
+
+    printf("\nDerivative (real direction): %.6f %+.6fi\n",
+           creal(d_real), cimag(d_real));
+
+    printf("Derivative (imag direction): %.6f %+.6fi\n",
+           creal(d_img), cimag(d_img));
+
+    /*
+    Analyticity test:
+    Uses a relative tolerance to account for floating-point error.
+    */
+    const double tol = 1e-5;
+    if (cabs(d_real - d_img) < tol * (1 + cabs(d_real))) {
+        printf("\nFunction appears analytic at this point.\n");
+    } else {
+        printf("\nFunction is NOT analytic at this point.\n");
+    }
+
+    return 0;
+}
+
+/* ===================== DERIVATIVE ===================== */
+
+/*
+ Approximates derivative using central difference:
+
+     f'(z) ≈ (f(z + h) - f(z - h)) / (2h)
+*/
+double complex derivative(double complex (*f)(double complex),
+                          double complex z,
+                          double complex h)
+{
+    return (f(z + h) - f(z - h)) / (2.0 * h);
+}
+
+/* ===================== FUNCTIONS ===================== */
+
+/* f(z) = z^2 */
+double complex FSquare(double complex z){
+    return z * z;
+}
+
+/* f(z) = z^3 */
+double complex FPoly(double complex z){
+    return z * z * z;
+}
+
+/* f(z) = exp(z) */
+double complex FExpo(double complex z){
+    return cexp(z);
+}
+
+/* f(z) = sin(z) */
+double complex FSin(double complex z){
+    return csin(z);
+}
+
+/*
+ f(z) = 1/z
+ Avoids division by zero.
+*/
+double complex FFraction(double complex z){
+    if (cabs(z) < 1e-12) {
+        printf("Warning: division by zero or near-zero\n");
+        return 0.0 + 0.0 * I;
+    }
+    return 1.0 / z;
+}
+
+/*
+ f(z) = log(z)
+ Undefined at z = 0.
+*/
+double complex FLog(double complex z){
+    if (cabs(z) < 1e-12) {
+        printf("Warning: log undefined at zero\n");
+        return 0.0 + 0.0 * I;
+    }
+    return clog(z);
+}
+
+/* f(z) = sqrt(z) */
+double complex FRoot(double complex z){
+    return csqrt(z);
+}
+
+/*
+ f(z) = conjugate(z)
+ Not analytic.
+*/
+double complex FConj(double complex z){
+    return conj(z);
+}
+
+/*
+ f(z) = |z|^2 = z * conjugate(z)
+ Not analytic.
+*/
+double complex FMagSquare(double complex z){
+    return z * conj(z);
+}
+
+/*
+ f(z) = Re(z)
+ Returns real part as complex number.
+ Not analytic.
+*/
+double complex FRealOnly(double complex z){
+    return creal(z) + 0.0 * I;
+}
