@@ -165,19 +165,27 @@ void fillMatrix(size_t n, int matrix[n][n]) {
     for (size_t i = 0; i < n; i++) {
         for (size_t j = 0; j < n; j++) {
 
-            if (scanf("%d", &matrix[i][j]) != 1) {
-                int ch;
-                while ((ch = getchar()) != '\n' && ch != EOF);
+            int value;
+
+            if (value < 0){
+                printf("Negative distances are not allowed\n");
                 return;
             }
 
-            /* Only allow 0 or 1 */
+             /* Only allow 0 or 1 */
             if (matrix[i][j] != 0 && matrix[i][j] != 1) {
                 printf("Invalid value at (%c,%c)\n",
                        (char)('A' + i),
                        (char)('A' + j));
                 return;
             }
+            
+            if (scanf("%d", &matrix[i][j]) != 1) {
+                int ch;
+                while ((ch = getchar()) != '\n' && ch != EOF);
+                return;
+            }
+           
         }
     }
 
