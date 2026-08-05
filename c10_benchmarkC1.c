@@ -7,41 +7,49 @@
 int main (void) {
     srand(time(NULL));
 
+
+
     int sizes [] = {1000, 10000, 100000, 1000000};
     int numberOfTests = sizeof(sizes) / sizeof(sizes[0]);
+
+    int repetitions = 5;
 
     for(int i = 0; i < numberOfTests; i++){
        int arraySize = sizes[i]; 
 
-       int *numbers = malloc(arraySize * sizeof(int));
+       for (int r = 0; r < repetitions; r++) {
 
-       if (numbers == NULL) {
-            printf("Memory allocation failed.\n");
-            return 1;
-       }
+            int *numbers = malloc(arraySize * sizeof(int));
 
-       //Fill array with random numbers
-       for (int j = 0; j < arraySize; j++){
-            numbers[j] = rand();
-       }
+            if (numbers == NULL) {
+                    printf("Memory allocation failed.\n");
+                    return 1;
+            }
 
-       // Start timer HERE
-       clock_t start = clock();
+            //Fill array with random numbers
+            for (int j = 0; j < arraySize; j++){
+                    numbers[j] = rand();
+            }
 
-       mergeSort(numbers, 0, arraySize - 1);
+            // Start timer HERE
+            clock_t start = clock();
 
-       clock_t end = clock();
+            mergeSort(numbers, 0, arraySize - 1);
 
-       double elapsedTime = (double)(end - start) / CLOCKS_PER_SEC;
-       printf("Size: %d Time: %.6f seconds\n",
-       arraySize,
-       elapsedTime);
+            clock_t end = clock();
 
-       if (!test(numbers, arraySize)){
-            printf("Sorting failed.\n");
-            free(numbers);
-            return 1;
-       }
+            double elapsedTime = (double)(end - start) / CLOCKS_PER_SEC;
+
+            if (!test(numbers, arraySize)){
+                    printf("Sorting failed.\n");
+                    free(numbers);
+                    return 1;
+            }
+
+            printf("Size: %d Time: %.6f seconds\n",
+                    arraySize,
+                    elapsedTime);
+        }
     }
 
     return 0;

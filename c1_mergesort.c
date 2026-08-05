@@ -1,4 +1,4 @@
-#include "c1_mergeSort.h"
+#include "mergeSort.h"
 
 #include <stdio.h>
 #include <stdlib.h>
