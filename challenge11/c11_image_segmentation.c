@@ -12,12 +12,24 @@ typedef struct {
     size_t sum;
 }   RegionStats;
 
-void initializeUnionFind(size_t *parent, size_t pixelCount);
+void initializeUnionFind(size_t *parent, 
+                            size_t pixelCount);
 void initializeRegionStats(unsigned char *image, 
                             RegionStats *stats, 
                             size_t pixelCount);
+size_t find(size_t *parent, size_t pixel);
+void unionSets(size_t *parent, 
+                RegionStats *stats, 
+                size_t rootA, 
+                size_t rootB);
+void mergeNeighbors(size_t *parent,
+                    RegionStats *stats,
+                    unsigned char *image,
+                    int width,
+                    int height);
 
-int main(void) {
+int main(void) 
+{
     int width;      //pixel count x
     int height;     //pixel count y
     int channels;   //how many values a pixel has originally
@@ -49,6 +61,7 @@ int main(void) {
         return 1;
     }
 
+    //every pixel becomes its own root
     initializeUnionFind(parent, pixelCount);
 
     //storage for each pixel stat 
@@ -61,6 +74,8 @@ int main(void) {
         return 1;
     }
     initializeRegionStats(image, stats, pixelCount);
+
+    mergeNeighbors(parent, stats, image, width, height);
 
     //format and value checks of the image
     printf("Width: %d\n", width);
@@ -76,7 +91,9 @@ int main(void) {
     return 0;   
 }
 
-void initializeUnionFind(size_t *parent, size_t pixelCount){
+void initializeUnionFind(size_t *parent, 
+                            size_t pixelCount)
+{
     //each entry pixel as its own root
     for (size_t i = 0; i < pixelCount; i++){
         parent[i] = i;
@@ -85,11 +102,87 @@ void initializeUnionFind(size_t *parent, size_t pixelCount){
 
 void initializeRegionStats(unsigned char *image, 
                             RegionStats *stats, 
-                            size_t pixelCount){
-    for(size_t i = 0; i < pixelCount; i++){
+                            size_t pixelCount)
+{    
+        for(size_t i = 0; i < pixelCount; i++){
         //eachs tructure starts with its root pixel
         stats[i].count = 1;
         //with value of the root pixel
         stats[i].sum = image[i];
+    }
+}
+
+size_t find(size_t *parent, size_t pixel)
+{    
+    while(parent[pixel] != pixel){
+        pixel = parent[pixel];
+    }
+
+    return pixel;
+}
+
+void unionSets(size_t *parent, 
+                RegionStats *stats, 
+                size_t rootA, 
+                size_t rootB)
+{    
+    parent[rootB] = rootA;                
+    stats[rootA].count += stats[rootB].count;
+    stats[rootA].sum += stats[rootB].sum;                 
+}
+
+void mergeNeighbors(size_t *parent,
+                    RegionStats *stats,
+                    unsigned char *image,
+                    int width,
+                    int height)
+{
+    //convert 2D-presentation into 1D
+    //since the stack in one dimensional 
+    for(int y = 0; y < height; y++){
+        for(int x = 0; x < width; x++){
+            size_t index = y * width + x;
+
+            if(x > 0){
+                size_t left = index -1;
+
+                size_t rootPixel = find(parent, index);
+                size_t rootLeft = find(parent, left);
+
+                if(rootPixel != rootLeft){
+                    double meanPixel = (double)stats[rootPixel].sum /
+                                        stats[rootPixel].count;
+
+                    double meanLeft = (double)stats[rootLeft].sum /
+                                        stats[rootLeft].count;
+
+                    double difference = meanPixel - meanLeft;
+                    if (difference < 0) {
+                        difference = (-1) * difference ;
+                    }
+
+                    printf("Difference = %.2f\n", difference);
+
+                    printf("Mean Pixel = %.2f | Mean Left = %.2f\n",
+                            meanPixel,
+                            meanLeft);
+
+                    if (difference <= 5.0){
+                        unionSets(parent, stats, rootPixel, rootLeft);
+
+                        printf("Merged %zu and %zu\n",
+                                rootPixel,
+                                rootLeft);
+                    }    
+                } else {
+                    
+                }
+            }
+
+            if(y > 0){
+                size_t top = index - width;
+            }
+
+        }
     }
 }
