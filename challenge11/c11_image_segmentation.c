@@ -181,6 +181,42 @@ void mergeNeighbors(size_t *parent,
 
             if(y > 0){
                 size_t top = index - width;
+
+                size_t rootPixel = find(parent, index);
+                size_t rootTop = find(parent, top);
+
+                if(rootPixel != rootTop){
+
+                    double meanPixel = (double)stats[rootPixel].sum /
+                                        stats[rootPixel].count;
+
+                    double meanTop = (double)stats[rootTop].sum /
+                                        stats[rootTop].count;
+
+                    double difference = meanPixel - meanTop;
+
+                    if(difference < 0){
+                        difference = (-1) * difference;
+                    }
+                    
+                    printf("Difference = %.2f\n", difference);
+                    
+                    printf("Mean Pixel = %.2f | Mean Top = %.2f\n",
+                            meanPixel,
+                            meanTop);
+
+                    if(difference <= 5.0){
+
+                        unionSets(parent,
+                                stats,
+                                rootPixel,
+                                rootTop);
+
+                        printf("Merged %zu and %zu\n",
+                            rootPixel,
+                            rootTop);
+                    }        
+                }
             }
 
         }
