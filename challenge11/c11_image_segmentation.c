@@ -5,6 +5,9 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 typedef struct {
     //total amount of pixel
     size_t count;
@@ -27,6 +30,11 @@ void mergeNeighbors(size_t *parent,
                     unsigned char *image,
                     int width,
                     int height);
+size_t countRegions(size_t *parent, 
+                    size_t pixelCount);
+void saveSegmentationImage(size_t *parent,
+                            int width,
+                            int heigt);
 
 int main(void) 
 {
@@ -75,13 +83,49 @@ int main(void)
     }
     initializeRegionStats(image, stats, pixelCount);
 
-    mergeNeighbors(parent, stats, image, width, height);
+    //mergeNeighbors(parent, stats, image, width, height);
+
+    size_t regions = pixelCount;
+    size_t iteration = 0;
+
+    while (1) {
+
+        
+        printf("START iteration\n");
+        fflush(stdout);
+
+        iteration++;
+
+        size_t previousRegions = regions;
+
+        mergeNeighbors(parent, stats, image, width, height);
+
+        regions = countRegions(parent, pixelCount);
+
+        printf("\nIteration: %zu\n", iteration);
+        printf("Regions: %zu\n", regions);
+
+        if (regions == previousRegions) {
+            printf("No regions changed. Segmentation finished.\n");
+            break;
+        }
+
+        printf("Press ENTER for the next iteration...\n");
+        getchar();
+        
+        printf("END iteration\n");
+        fflush(stdout);
+
+
+    }
 
     //format and value checks of the image
     printf("Width: %d\n", width);
     printf("Height: %d\n", height);
     printf("Original channels: %d\n", channels);
     printf("First pixel value: %u\n", image[0]);
+
+    saveSegmentationImage(parent, width, height);
 
     //free storage
     stbi_image_free(image);
@@ -114,11 +158,11 @@ void initializeRegionStats(unsigned char *image,
 
 size_t find(size_t *parent, size_t pixel)
 {    
-    while(parent[pixel] != pixel){
-        pixel = parent[pixel];
+    if(parent[pixel] != pixel){
+        parent[pixel] = find(parent, parent[pixel]);
     }
 
-    return pixel;
+    return parent[pixel];
 }
 
 void unionSets(size_t *parent, 
@@ -161,11 +205,11 @@ void mergeNeighbors(size_t *parent,
                         difference = (-1) * difference ;
                     }
 
-                    printf("Difference = %.2f\n", difference);
+                    // printf("Difference = %.2f\n", difference);
 
-                    printf("Mean Pixel = %.2f | Mean Left = %.2f\n",
-                            meanPixel,
-                            meanLeft);
+                    // printf("Mean Pixel = %.2f | Mean Left = %.2f\n",
+                    //         meanPixel,
+                    //         meanLeft);
 
                     if (difference <= 5.0){
                         unionSets(parent, stats, rootPixel, rootLeft);
@@ -199,13 +243,13 @@ void mergeNeighbors(size_t *parent,
                         difference = (-1) * difference;
                     }
                     
-                    printf("Difference = %.2f\n", difference);
+                    // printf("Difference = %.2f\n", difference);
                     
-                    printf("Mean Pixel = %.2f | Mean Top = %.2f\n",
-                            meanPixel,
-                            meanTop);
+                    // printf("Mean Pixel = %.2f | Mean Top = %.2f\n",
+                    //         meanPixel,
+                    //         meanTop);
 
-                    if(difference <= 5.0){
+                    if(difference == 10.0){
 
                         unionSets(parent,
                                 stats,
@@ -221,4 +265,62 @@ void mergeNeighbors(size_t *parent,
 
         }
     }
+}
+
+size_t countRegions(size_t *parent, 
+                    size_t pixelCount)
+{
+    size_t regions = 0;
+
+    for (size_t i = 0; i < pixelCount; i++) {
+        if(parent[i] == i) {
+            regions++;
+        }
+    }
+
+    return regions;
+}
+
+void saveSegmentationImage(size_t *parent,
+                            int width,
+                            int height)
+{
+    size_t pixelCount = (size_t)width * (size_t)height;
+
+    unsigned char *output = malloc(pixelCount * 3);
+
+    if (output == NULL) {
+        printf("Memory allocation failed\n");
+        return;
+    }
+
+    for(size_t i = 0; i < pixelCount; i++) {
+
+        size_t root = find(parent, i);
+
+        unsigned char red   = root % 256;
+        unsigned char green = (root / 256) % 256;
+        unsigned char blue  = (root / 65536) % 256;
+
+        output[i * 3]     = red;
+        output[i * 3 + 1] = green;
+        output[i * 3 + 2] = blue;
+    }
+
+
+    // Write RGB image to a PNG file
+    if (!stbi_write_png(
+            "segmentation.png",
+            width,
+            height,
+            3,
+            output,
+            width * 3)) {
+
+        printf("Failed to write segmentation image\n");
+    } else {
+        printf("Segmentation image saved as segmentation.png\n");
+    }
+
+    free(output);
 }
