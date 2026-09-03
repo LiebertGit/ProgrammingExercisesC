@@ -3,9 +3,9 @@
 
 /* Struct to store tree check results */
 typedef struct {
-    int visited_all;   // 1 if graph is connected
-    int edge_count;    // number of edges (undirected)
-    int has_cycle;     // 1 if cycle detected
+    int visited_all;       // 1 if graph is connected
+    size_t edge_count;     // number of edges (undirected)
+    int has_cycle;         // 1 if cycle detected
 } TreeCheck;
 
 /* Function declarations */
@@ -15,13 +15,14 @@ void fillMatrix(size_t n, int matrix[n][n]);
 void printMatrix(size_t n, int matrix[n][n]);
 void print_menu(void);
 void breadthSearch(size_t n, int matrix[n][n],
-                    int visited[n], size_t start);
+                   int visited[n], size_t start);
 int allComponents(size_t n, int matrix[n][n]);
 TreeCheck bfsTreeCheck(size_t n, int matrix[n][n], size_t start);
 
-int main() {
+int main(void) {
 
     size_t n;
+
     printf("Enter amount of vertices: ");
     scanf("%zu", &n);
 
@@ -55,18 +56,28 @@ int main() {
             case 3: {
                 /* BFS starting from chosen vertex */
                 char c;
-                printf("Enter start vertex (A-%c): ", (char)('A' + n - 1));
+
+                printf("Enter start vertex (A-%c): ",
+                       (char)('A' + n - 1));
+
                 scanf(" %c", &c);
 
-                size_t start = c - 'A';
+                /*
+                 * Convert the character to an integer first.
+                 * This allows us to detect values below 'A'.
+                 */
+                int start_index = c - 'A';
 
-                if (start >= n) {
+                if (start_index < 0 || (size_t)start_index >= n) {
                     printf("Invalid vertex\n");
                     break;
                 }
 
+                size_t start = (size_t)start_index;
+
                 int visited[n];
-                for (size_t i = 0; i < n; i++){
+
+                for (size_t i = 0; i < n; i++) {
                     visited[i] = 0;
                 }
 
@@ -89,10 +100,15 @@ int main() {
                 /* Check if graph is a tree */
                 TreeCheck res = bfsTreeCheck(n, matrix, 0);
 
-                if (res.visited_all && !res.has_cycle && res.edge_count == n - 1)
+                if (res.visited_all &&
+                    !res.has_cycle &&
+                    res.edge_count == n - 1) {
+
                     printf("Graph is a tree\n");
-                else
+                }
+                else {
                     printf("Graph is NOT a tree\n");
+                }
 
                 break;
             }
@@ -108,6 +124,7 @@ int main() {
 /* ---------------- MENU ---------------- */
 
 void print_menu(void) {
+
     printf("\nMenu:\n");
     printf("1: Edit Matrix\n");
     printf("2: Fill Matrix\n");
@@ -121,24 +138,45 @@ void print_menu(void) {
 /* ---------------- EDIT SINGLE EDGE ---------------- */
 
 void editMatrix(size_t n, int matrix[n][n]) {
+
     char c1, c2;
     size_t val;
 
     /* Read edge input */
     if (scanf(" %c %c %zu", &c1, &c2, &val) != 3) {
+
         int ch;
+
         while ((ch = getchar()) != '\n' && ch != EOF);
+
         return;
     }
 
+    /*
+     * Use int temporarily so that negative values can
+     * be detected before converting to size_t.
+     */
     int i1 = c1 - 'A';
     int i2 = c2 - 'A';
 
-    /* Validate indices and value */
-    if (val > 1 || i1 < 0 || i2 < 0 || i1 >= n || i2 >= n)
+    /* Validate value */
+    if (val > 1)
         return;
 
-    matrix[i1][i2] = val;
+    /* Validate that the vertices are not below 'A' */
+    if (i1 < 0 || i2 < 0)
+        return;
+
+    /* Convert only after checking for negative values */
+    size_t row = (size_t)i1;
+    size_t column = (size_t)i2;
+
+    /* Validate that the vertices are inside the matrix */
+    if (row >= n || column >= n)
+        return;
+
+    matrix[row][column] = (int)val;
+
     printMatrix(n, matrix);
 }
 
@@ -148,7 +186,9 @@ void initializeMatrix(size_t n, int matrix[n][n]) {
 
     /* Set all entries to 0 */
     for (size_t i = 0; i < n; i++) {
+
         for (size_t j = 0; j < n; j++) {
+
             matrix[i][j] = 0;
         }
     }
@@ -163,29 +203,38 @@ void fillMatrix(size_t n, int matrix[n][n]) {
     printf("Paste %zux%zu matrix (0/1 values):\n", n, n);
 
     for (size_t i = 0; i < n; i++) {
+
         for (size_t j = 0; j < n; j++) {
 
             int value;
 
-            if (value < 0){
-                printf("Negative distances are not allowed\n");
+            /*
+             * Read the value first.
+             */
+            if (scanf("%d", &value) != 1) {
+
+                int ch;
+
+                while ((ch = getchar()) != '\n' && ch != EOF);
+
+                printf("Invalid input\n");
+
                 return;
             }
 
-             /* Only allow 0 or 1 */
-            if (matrix[i][j] != 0 && matrix[i][j] != 1) {
+            /*
+             * Only allow 0 or 1.
+             */
+            if (value != 0 && value != 1) {
+
                 printf("Invalid value at (%c,%c)\n",
                        (char)('A' + i),
                        (char)('A' + j));
+
                 return;
             }
-            
-            if (scanf("%d", &matrix[i][j]) != 1) {
-                int ch;
-                while ((ch = getchar()) != '\n' && ch != EOF);
-                return;
-            }
-           
+
+            matrix[i][j] = value;
         }
     }
 
@@ -199,9 +248,12 @@ void printMatrix(size_t n, int matrix[n][n]) {
 
     /* Column labels */
     printf("  ");
+
     for (size_t j = 0; j < n; j++) {
+
         printf("%c ", (char)('A' + j));
     }
+
     printf("\n");
 
     /* Rows */
@@ -210,6 +262,7 @@ void printMatrix(size_t n, int matrix[n][n]) {
         printf("%c ", (char)('A' + i));
 
         for (size_t j = 0; j < n; j++) {
+
             printf("%d ", matrix[i][j]);
         }
 
@@ -220,29 +273,43 @@ void printMatrix(size_t n, int matrix[n][n]) {
 /* ---------------- BFS ---------------- */
 
 void breadthSearch(size_t n, int matrix[n][n],
-                    int visited[n], size_t start) {
-    
-    if(n == 0){
+                   int visited[n], size_t start) {
+
+    if (n == 0) {
+
         printf("Graph is empty.\n");
+
         return;
     }
 
-    int queue[n];
-    size_t front = 0; 
+    /*
+     * Queue contains vertex indices,
+     * therefore size_t is the natural type.
+     */
+    size_t queue[n];
+
+    size_t front = 0;
     size_t rear = 0;
 
     /* Initialize BFS */
     queue[rear++] = start;
     visited[start] = 1;
 
-    while (front < rear){
-        int i = queue[front++];
-        printf("%c", (char)('A'+i));
-        
+    while (front < rear) {
+
+        size_t i = queue[front++];
+
+        printf("%c", (char)('A' + i));
+
         /* Explore neighbors (undirected) */
-        for(size_t j = 0; j < n; j++){
-            if ((matrix[i][j] == 1 || matrix[j][i] == 1) && !visited[j]){
+        for (size_t j = 0; j < n; j++) {
+
+            if ((matrix[i][j] == 1 ||
+                 matrix[j][i] == 1) &&
+                !visited[j]) {
+
                 visited[j] = 1;
+
                 queue[rear++] = j;
             }
         }
@@ -251,10 +318,12 @@ void breadthSearch(size_t n, int matrix[n][n],
 
 /* ---------------- CONNECTED COMPONENTS ---------------- */
 
-int allComponents (size_t n, int matrix [n][n]){
-    
+int allComponents(size_t n, int matrix[n][n]) {
+
     int visited[n];
+
     for (size_t i = 0; i < n; i++) {
+
         visited[i] = 0;
     }
 
@@ -262,55 +331,91 @@ int allComponents (size_t n, int matrix [n][n]){
 
     /* Run BFS from each unvisited node */
     for (size_t i = 0; i < n; i++) {
+
         if (!visited[i]) {
+
             printf("Component: ");
+
             breadthSearch(n, matrix, visited, i);
+
             printf("\n");
+
             count++;
         }
     }
 
-    return count;
+    return (int)count;
 }
 
 /* ---------------- TREE CHECK ---------------- */
 
-TreeCheck bfsTreeCheck(size_t n, int matrix[n][n], size_t start){
-    
-    TreeCheck result = {0, 0, 0};
+TreeCheck bfsTreeCheck(size_t n,
+                       int matrix[n][n],
+                       size_t start) {
+
+    TreeCheck result = {
+        .visited_all = 0,
+        .edge_count = 0,
+        .has_cycle = 0
+    };
 
     int visited[n];
-    int parent[n];
+
+    /*
+     * Parent contains vertex indices, so size_t
+     * is the appropriate type.
+     *
+     * The root is its own parent.
+     */
+    size_t parent[n];
 
     /* Initialize arrays */
-    for (size_t i = 0; i < n; i++){
+    for (size_t i = 0; i < n; i++) {
+
         visited[i] = 0;
-        parent[i] = -1;
+        parent[i] = i;
     }
 
-    int queue[n];
-    size_t front = 0, rear = 0;
+    /*
+     * Queue contains vertex indices,
+     * so use size_t here as well.
+     */
+    size_t queue[n];
+
+    size_t front = 0;
+    size_t rear = 0;
 
     queue[rear++] = start;
     visited[start] = 1;
 
-    while(front < rear){
-        int i = queue[front++];
+    while (front < rear) {
 
-        for(size_t j = 0; j < n; j++){
+        size_t i = queue[front++];
+
+        for (size_t j = 0; j < n; j++) {
 
             /* Undirected edge check */
-            if(matrix[i][j] == 1 || matrix[j][i] == 1){
+            if (matrix[i][j] == 1 ||
+                matrix[j][i] == 1) {
 
                 result.edge_count++;
 
-                if(!visited[j]) {
+                if (!visited[j]) {
+
                     visited[j] = 1;
+
                     parent[j] = i;
+
                     queue[rear++] = j;
-                } 
-                /* If visited and not parent -> cycle */
-                else if (parent[i] != j){
+                }
+
+                /*
+                 * If the neighbor was already visited
+                 * and is not the current vertex's parent,
+                 * we found a cycle.
+                 */
+                else if (parent[i] != j) {
+
                     result.has_cycle = 1;
                 }
             }
@@ -319,14 +424,21 @@ TreeCheck bfsTreeCheck(size_t n, int matrix[n][n], size_t start){
 
     /* Check connectivity */
     result.visited_all = 1;
-    for(size_t i = 0; i < n; i++){
-        if(!visited[i]){
+
+    for (size_t i = 0; i < n; i++) {
+
+        if (!visited[i]) {
+
             result.visited_all = 0;
+
             break;
         }
     }
 
-    /* Each edge counted twice */
+    /*
+     * Because the graph is undirected, every edge
+     * was encountered twice.
+     */
     result.edge_count /= 2;
 
     return result;
