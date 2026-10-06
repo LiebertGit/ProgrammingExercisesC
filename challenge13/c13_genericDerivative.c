@@ -1,0 +1,152 @@
+#include <stdio.h>
+#include <math.h>
+#include <complex.h>
+
+double *currentCoefficients;
+int currentDegree;
+
+/* Real generic derivative */
+double derivative (double (*F)(double), double x);
+
+/* Complex generic derivative */
+double complex derivate (
+                    double complex (*F)(double complex),
+                    double complex z);
+
+double Newton (double (*F)(double), double x);
+
+double polynomial (double x);
+
+void findRealRoots (double (*F)(double),
+                    double min,
+                    double max,
+                    double step);
+
+double Fsin (double x) { 
+    return sin (x);
+}
+
+double Fsquare (double x){
+    return x * x;
+}
+
+double complex Fcube (double complex z) {
+    return z * z * z; 
+}
+
+double polynomial (double x){
+    double result = 0.0;
+    
+    for (int i = currentDegree; i >= 0; i--){
+        result = result * x + currentCoefficients[i];
+    }
+
+    return result;
+}
+
+int main (void){
+
+    double x = 2.0;
+
+    printf("sin'(%.2f) = %f\n", x, derivative(Fsin, x));
+    printf("(x^2)' at %.2f = %f\n", x, derivative(Fsquare, x));
+
+    double complex z = 2.0 + 1.0 * I;
+
+    double complex result = derivate(Fcube, z);
+
+    printf("Derivative of z^3 at %.2f + %.2fi = %.6f + %.6fi\n",
+            creal(z), cimag(z),
+            creal(result), cimag(result));
+
+    int degree;
+    
+    printf("\nEnter polynomial degree: ");
+  
+    if (scanf("%d", &degree) != 1) {
+        printf("Invalid degree.\n");
+        return 1;
+    }
+
+    double coefficients[degree + 1];
+
+    for (int i = degree; i >= 0; i--) {
+        printf("Coefficient for x^%d: ", i);
+        scanf("%lf", &coefficients[i]);
+    }
+
+    currentCoefficients = coefficients;
+    currentDegree = degree;
+
+    findRealRoots(polynomial, -10.0, 10.0, 0.5);
+
+    return 0;
+}
+
+double derivative (double (*F)(double), double x) {
+    double h = 1e-6;
+
+    return (F(x +h) -F(x)) / h;
+}
+
+double complex derivate (
+                    double complex (*F) (double complex),
+                    double complex z) {
+    double complex h = 1e-6;
+
+    return (F(z + h) - F(z - h)) / (2.0 * h);
+}
+
+double Newton (double (*F)(double), double x){
+    for (int i = 0; i < 100; i++){
+        double fx = F(x);
+        double dfx = derivative (F, x);
+
+        if (fabs(dfx) < 1e-12) {
+            return x;
+        }
+
+        double next = x - fx / dfx;
+
+        if (fabs(next - x)  < 1e-10){
+            return next;
+        }
+
+        x = next;
+    }
+
+    return x;
+}
+
+void findRealRoots (double (*F)(double),
+                    double min,
+                    double max,
+                    double step)
+{
+    double roots[100];
+    int rootCount = 0;
+    
+    for (double start = min; start <= max; start += step) {
+        double root = Newton(F, start);
+
+        if (fabs(F(root)) < 1e-6){
+
+            int alreadyFound = 0;
+
+            for (int i = 0; i < rootCount; i++){
+                if (fabs(root - roots[i]) < 1e-6) {
+                    alreadyFound = 1;
+                    break;
+                }
+            }
+
+            if (!alreadyFound && rootCount < 100) {
+                roots[rootCount] = root;
+                rootCount++;
+
+                printf("Found root: %.10f\n", root);
+            }
+        }
+    }
+}
+
