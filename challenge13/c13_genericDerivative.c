@@ -13,11 +13,22 @@ double complex derivate (
                     double complex (*F)(double complex),
                     double complex z);
 
-double Newton (double (*F)(double), double x);
+double Newton (double (*F)(double),
+                double (*dF) (double),
+                double x);
+
+double complex NewtonComplex(
+            double complex (*F)(double complex),
+            double complex z);
 
 double polynomial (double x);
+double polynomialDerivative (double x);
+
+double complex complexPolynomial(double complex z);
+double complex complexPolynomialDerivative (double complex z);
 
 void findRealRoots (double (*F)(double),
+                    double (*dF)(double),
                     double min,
                     double max,
                     double step);
@@ -42,6 +53,38 @@ double polynomial (double x){
     }
 
     return result;
+}
+
+double polynomialDerivative (double x) {
+    double result = 0.0;
+
+    for (int i = currentDegree; i >= 1; i--){
+        result = result * x + i * currentCoefficients[i];
+    }
+    return result;
+}
+
+double complex complexPolynomial (double complex z) {
+    double complex result = 0.0;
+
+    for (int i = currentDegree; i >= 0; i--){
+        result = result * z + currentCoefficients[i];
+    }
+
+    return result;
+}
+
+double complex complexPolynomialDerivative(double complex z){
+    double complex result = 0.0;
+
+    for (int i = currentDegree; i >= 1; i--){
+        result = result * z + i * currentCoefficients[i];
+    }
+    return result;
+}
+
+double complex FcomplexTest(double complex z){
+    return z * z + 1.0;
 }
 
 int main (void){
@@ -78,7 +121,24 @@ int main (void){
     currentCoefficients = coefficients;
     currentDegree = degree;
 
-    findRealRoots(polynomial, -10.0, 10.0, 0.5);
+    printf("P(2) = %f\n", polynomial(2.0));
+    printf("P'(2) = %f\n", polynomialDerivative(2.0));
+
+    printf("P'(2 + i) = %.6f + %.6fi\n",
+        creal(complexPolynomialDerivative(2.0 + 1.0 * I)),
+        cimag(complexPolynomialDerivative(2.0 + 1.0 * I)));
+
+    findRealRoots(polynomial, 
+                polynomialDerivative, 
+                -10.0, 
+                10.0, 
+                0.5);
+
+    double complex testRoot = 
+        NewtonComplex(FcomplexTest, 1.0 + 1.0 * I);
+
+    printf("Complex root: %.10f + %.10fi\n",
+        creal(testRoot), cimag(testRoot));
 
     return 0;
 }
@@ -97,28 +157,54 @@ double complex derivate (
     return (F(z + h) - F(z - h)) / (2.0 * h);
 }
 
-double Newton (double (*F)(double), double x){
+double Newton (double (*F)(double),
+                double (*dF) (double),
+                double x) 
+{
     for (int i = 0; i < 100; i++){
         double fx = F(x);
-        double dfx = derivative (F, x);
+        double dfx = dF(x);
 
         if (fabs(dfx) < 1e-12) {
             return x;
         }
-
         double next = x - fx / dfx;
 
         if (fabs(next - x)  < 1e-10){
             return next;
         }
-
         x = next;
     }
-
     return x;
 }
 
+double complex NewtonComplex (
+                double complex (*F)(double complex),
+                double complex z) 
+{
+    for (int i = 0; i < 100; i++){
+        double complex fz = F(z);
+        double complex dfz = derivate (F, z);
+    
+        if (cabs(dfz) < 1e-12){
+            return z;
+        }
+
+        double complex next = z - fz / dfz;
+
+        if (cabs(next -z) < 1e-10){
+            return next;
+        }
+
+        z = next;
+    }
+
+    return z;
+}
+
+
 void findRealRoots (double (*F)(double),
+                    double (*dF)(double),
                     double min,
                     double max,
                     double step)
@@ -127,7 +213,7 @@ void findRealRoots (double (*F)(double),
     int rootCount = 0;
     
     for (double start = min; start <= max; start += step) {
-        double root = Newton(F, start);
+        double root = Newton(F, dF, start);
 
         if (fabs(F(root)) < 1e-6){
 
