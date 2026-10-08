@@ -33,12 +33,27 @@ void findRealRoots (double (*F)(double),
                     double max,
                     double step);
 
+void findComplexRoots (
+                double complex (*F) (double complex),
+                double complex (*dF) (double complex),
+                double min,
+                double max,
+                double step);
+
 double Fsin (double x) { 
     return sin (x);
 }
 
 double Fsquare (double x){
     return x * x;
+}
+
+double Ftest (double x)  {
+    return x * x - 2.0;
+}
+
+double FtestDerivative (double x){
+    return 2.0 * x;
 }
 
 double complex Fcube (double complex z) {
@@ -128,6 +143,9 @@ int main (void){
         creal(complexPolynomialDerivative(2.0 + 1.0 * I)),
         cimag(complexPolynomialDerivative(2.0 + 1.0 * I)));
 
+    double testRealRoot = Newton(Ftest, FtestDerivative, 1.0);
+    printf("Real root of x² - 2: %.10f\n", testRealRoot);
+
     findRealRoots(polynomial, 
                 polynomialDerivative, 
                 -10.0, 
@@ -139,6 +157,12 @@ int main (void){
 
     printf("Complex root: %.10f + %.10fi\n",
         creal(testRoot), cimag(testRoot));
+
+    findComplexRoots(complexPolynomial,
+                    complexPolynomialDerivative,
+                    -5.0,
+                    5.0,
+                    0.5);
 
     return 0;
 }
@@ -231,6 +255,33 @@ void findRealRoots (double (*F)(double),
                 rootCount++;
 
                 printf("Found root: %.10f\n", root);
+            }
+        }
+    }
+}
+
+void findComplexRoots (
+                double complex (*F) (double complex),
+                double complex (*dF)(double complex),
+                double min,
+                double max,
+                double step)
+{
+    double complex roots[100];
+    int rootCount = 0;
+    
+    for (double real = min; real <= max; real += step){
+    for(double imag = min; imag <= max; imag += step){
+
+        double complex start = real + imag * I;
+        double complex root = NewtonComplex(F, start);    
+        
+        if(cabs(F(root)) < 1e-6){
+
+            
+
+            printf("Found complex root: %.10f + %.10fi\n",
+                    creal(root), cimag(root));
             }
         }
     }
